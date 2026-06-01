@@ -1,6 +1,11 @@
-// Nourish Service Worker - enables offline use
-const CACHE = 'nourish-v1';
-const ASSETS = ['./nourish.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'nourish-v2';
+const ASSETS = [
+  '/nourish/',
+  '/nourish/index.html',
+  '/nourish/manifest.json',
+  '/nourish/icon-192.png',
+  '/nourish/icon-512.png'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -21,7 +26,7 @@ self.addEventListener('fetch', e => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
-      }).catch(() => caches.match('./nourish.html'));
+      }).catch(() => caches.match('/nourish/'));
     })
   );
 });
