@@ -1541,30 +1541,31 @@ const DAYS = [
   },
   {
     id: 'wed', label: 'Wed', name: 'Wednesday', type: 'training',
-    title: 'Swim + Core & Mobility',
-    meta: '1.5 hrs · Pool + Gym',
+    title: 'Home Core + Family Swim',
+    meta: 'Morning core at home + 6:45pm pool',
     sections: [
       {
-        id: 'swim', icon: '🏊', iconClass: 'icon-swim', title: 'Swim', duration: '45 mins',
+        id: 'core', icon: '💪', iconClass: 'icon-core', title: 'Morning Core Circuit', duration: '25-30 mins at home',
         exercises: [
-          { text: 'Warm-up: 200m easy', sets: null },
-          { text: '4 × 100m with 30 sec rest', sets: null },
-          { text: 'Cool-down: 100m easy', sets: null },
+          { text: 'Dead bug', sets: '3 sets x 40 reps' },
+          { text: 'Leg raises', sets: '3 sets x 20 reps' },
+          { text: 'Plank', sets: '3 sets x 60 secs' },
+          { text: 'Side plank', sets: '3 sets x 45 secs each' },
+          { text: 'Russian twists', sets: '3 sets x 20 reps' },
+          { text: 'Hollow holds', sets: '3 sets x 30 secs' },
+          { text: 'Ab wheel rollouts', sets: '3 sets x 10 reps' },
+          { text: 'Bird dog', sets: '3 sets x 15 each side' },
         ],
-        note: 'Target 1,500–2,000m total. Wednesday is active recovery — use this to loosen up.'
+        note: 'No equipment needed — do before school run! Core work directly targets abdominal fat!'
       },
       {
-        id: 'core', icon: '💪', iconClass: 'icon-core', title: 'Core & Mobility', duration: '45 mins',
+        id: 'swim', icon: '🏊', iconClass: 'icon-swim', title: 'Family Swim with Jack', duration: '6:45pm ~ 30 mins',
         exercises: [
-          { text: 'Plank', sets: '3 sets' },
-          { text: 'Dead bug', sets: '3 sets' },
-          { text: 'Bird-dog', sets: '3 sets' },
-          { text: 'Side plank', sets: '3 sets' },
-          { text: 'Hip flexor stretch', sets: null },
-          { text: 'Hamstring stretch', sets: null },
-          { text: 'Thoracic spine mobility', sets: null },
-          { text: 'Shoulder mobility', sets: null },
-        ]
+          { text: '20 lengths with Jack', sets: null },
+          { text: 'Steady pace — fat burning zone!', sets: null },
+          { text: 'Paul and Ben in slow lane', sets: null },
+        ],
+        note: 'Slower pace = fat burning zone! Jack keeps you going. Wednesday is whole family health time!'
       }
     ]
   },
@@ -2141,14 +2142,35 @@ async function aiSend() {
   document.getElementById('aiSendBtn').disabled = true;
 
   try {
+    const reqBody = { model: 'claude-sonnet-4-20250514', max_tokens: 1200, system: SYSTEM_PROMPT, messages: aiHistory };
+    console.log('API Key starts with:', apiKey.substring(0,10));
+    console.log('Sending request to Anthropic...');
+    
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1200, system: SYSTEM_PROMPT, messages: aiHistory })
+      headers: { 
+        'Content-Type': 'application/json', 
+        'x-api-key': apiKey, 
+        'anthropic-version': '2023-06-01', 
+        'anthropic-dangerous-allow-browser': 'true' 
+      },
+      body: JSON.stringify(reqBody)
     });
+    
+    console.log('Response status:', res.status);
+    console.log('Response type:', res.headers.get('content-type'));
+    
     removeTyping(typingId);
-    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message||'API error'); }
-    const data = await res.json();
+    const txt = await res.text();
+    console.log('Response preview:', txt.substring(0, 200));
+    
+    if (!res.ok) {
+      let errMsg;
+      try { errMsg = JSON.parse(txt).error?.message || 'API error ' + res.status; }
+      catch(e) { errMsg = `HTTP ${res.status} — ${txt.substring(0,100)}`; }
+      throw new Error(errMsg);
+    }
+    const data = JSON.parse(txt);
     const reply = data.content[0].text;
     aiHistory.push({role:'assistant', content:reply});
     if (aiHistory.length > 20) aiHistory = aiHistory.slice(-20);
@@ -2164,7 +2186,7 @@ async function aiSend() {
     });
   } catch(err) {
     removeTyping(typingId);
-    addAiMsg('ai', 'Sorry — ' + (err.message.includes('401') ? 'check your API key ⚙️' : err.message));
+    addAiMsg('ai', `Error: ${err.message}\n\nCheck the browser console (F12 → Console) for more details.`);
   }
   aiLoading = false;
   document.getElementById('aiSendBtn').disabled = false;
